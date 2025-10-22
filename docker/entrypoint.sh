@@ -1,25 +1,26 @@
 #!/usr/bin/env bash
 set -e
 
-echo "🚀 Iniciando contenedor Laravel..."
+cd /var/www/html
 
-# Asegurar BD sqlite
-[ -f /var/www/html/database/database.sqlite ] || touch /var/www/html/database/database.sqlite
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
+# Asegura rutas y permisos
+mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache database
+touch database/database.sqlite || true
+chown -R www-data:www-data storage bootstrap/cache database
+chmod -R 775 storage bootstrap/cache database
 
-# Limpiar y reconstruir caches con ENV reales de Render
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-php artisan cache:clear
+# Limpia (si falla, no rompas el boot)
+php artisan config:clear || true
+php artisan route:clear  || true
+php artisan view:clear   || true
 
+# Migraciones
+php artisan migrate --force
+
+# Cachea
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Migraciones
-php artisan migrate --force || true
-
-# Arrancar Apache
+# Arranca Apache
 exec apache2-foreground
