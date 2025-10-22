@@ -1,5 +1,4 @@
 FROM php:8.2-apache
-
 WORKDIR /var/www/html
 
 # Paquetes + extensiones PHP
@@ -11,20 +10,23 @@ RUN apt-get update && apt-get install -y \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia el vhost fijo (sin sed)
+# VHOST estable a /public
 COPY docker/vhost.conf /etc/apache2/sites-available/000-default.conf
 
-# Copia el proyecto
+# Copia el código
 COPY . /var/www/html
 
-# Composer
+# Composer en la imagen
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Permisos mínimos para storage y DB sqlite
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database \
+# 🔹 Instalar dependencias PHP (crea vendor/)
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+# Permisos
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database /var/www/html/vendor \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Entrypoint (migraciones + caches y arranque de Apache)
+# Entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
