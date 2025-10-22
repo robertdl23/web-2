@@ -1,45 +1,40 @@
-# Imagen base con PHP CLI 8.2
-FROM php:8.2-cli
+# Usa PHP con Apache
+FROM php:8.2-apache
 
-# Dependencias del sistema y extensiones PHP necesarias (sqlite, gd, zip, intl)
+# Instala dependencias del sistema necesarias
 RUN apt-get update && apt-get install -y \
-    git unzip libzip-dev libpng-dev libicu-dev libsqlite3-0 libsqlite3-dev curl \
-    && docker-php-ext-configure gd --with-jpeg \
-    && docker-php-ext-install pdo pdo_sqlite gd intl zip \
-    && rm -rf /var/lib/apt/lists/*
+    git curl zip unzip sqlite3 libsqlite3-dev \
+    && docker-php-ext-install pdo pdo_sqlite
 
-# Composer (desde imagen oficial)
+# Habilita mod_rewrite de Apache
+RUN a2enmod rewrite
+
+# Copia archivos del proyecto al contenedor
+COPY . /var/www/html
+
+# Establece el directorio de trabajo
+WORKDIR /var/www/html
+
+# Instala Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN composer install --no-dev --optimize-autoloader
 
-# Node.js 20 (para compilar Vite)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && npm -v && node -v
+# Instala Node y compila los assets
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm ci && npm run build
 
-# Directorio de trabajo
-WORKDIR /app
+# Crea base de datos SQLite temporal
+RUN php -r "if (!file_exists('/tmp/database.sqlite')) touch('/tmp/database.sqlite');"
 
-# Instalar dependencias de PHP (usando cache por capas)
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+# Configura permisos
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Instalar y construir assets (usando cache por capas)
-COPY package*.json vite.config.js ./
-COPY resources ./resources
-COPY public ./public
-RUN npm ci --no-audit --no-fund && npm run build
+# Define variable de entorno para el puerto
+ENV PORT=80
 
-# Copiar el resto del proyecto
-COPY . .
+# Expone el puerto
+EXPOSE 80
 
-# Permisos para storage y cache
-RUN chown -R www-data:www-data storage bootstrap/cache && chmod -R 775 storage bootstrap/cache
-
-# Puerto para Render
-ENV PORT=8000
-EXPOSE 8000
-
-# Crear SQLite en /tmp, migrar y levantar Laravel
-CMD sh -lc "php -r 'file_exists(\"/tmp/database.sqlite\") || touch(\"/tmp/database.sqlite\");' \
-    && php artisan migrate --force \
-    && php artisan serve --host 0.0.0.0 --port=$PORT"
+# Comando de inicio
+CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
