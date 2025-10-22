@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Foro de programación</title>
 
-  @vite('resources/js/app.js')
-
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-gradient-to-b from-neutral-950 to-neutral-900 text-white">
     <div class="px-4 border-b border-neutral-800">
