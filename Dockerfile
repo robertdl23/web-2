@@ -23,16 +23,13 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Dependencias PHP
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-# --- Node + build de Vite (con devDeps) ---
-# instala curl por si no estuviera
-RUN apt-get update && apt-get install -y curl
-
+# --- Node + build de Vite ---
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && node -v && npm -v
 
-# Instalamos devDependencies para poder compilar y luego las podaremos
-# (no fijes NODE_ENV=production antes del build)
+# MUY IMPORTANTE: no pongas NODE_ENV=production antes de esto.
+# Ejecuta con dev-deps y luego prune.
 RUN npm ci --include=dev --no-audit --no-fund \
     && npm run build \
     && npm prune --omit=dev
