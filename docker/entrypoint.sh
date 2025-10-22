@@ -24,3 +24,12 @@ php artisan view:cache
 
 # Arranca Apache
 exec apache2-foreground
+# Crear SQLite si no existe
+if [ "$DB_CONNECTION" = "sqlite" ]; then
+  DB_FILE="${DB_DATABASE:-/var/www/html/database/database.sqlite}"
+  mkdir -p "$(dirname "$DB_FILE")"
+  [ -f "$DB_FILE" ] || touch "$DB_FILE"
+  chown -R www-data:www-data /var/www/html/database
+fi
+
+php artisan migrate --force || true
