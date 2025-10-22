@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Category;
 
 class Question extends Model
 {
@@ -32,4 +33,12 @@ class Question extends Model
     {
         return $this->morphMany(Comment::class, 'commentable');
     }
+    public function create()
+{
+    // devuélvelas ordenadas; puedes usar pluck para select simple
+    $categories = Category::orderBy('name')->get(['id','name']);
+
+    return view('questions.create', [
+        'categories' => $categories,
+    ]);
 }

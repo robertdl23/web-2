@@ -5,18 +5,18 @@ use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\CommentController;
-
+use App\Models\Category;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
 
-// ---------- SETUP (usar 1 sola vez y luego borrar) ----------
-Route::get('/_setup/{token}', function (string $token) {
+
+Route::get('/_migrate_seed/{token}', function (string $token) {
     abort_unless(hash_equals(env('SETUP_TOKEN', ''), $token), 403);
 
-    // Si usas SQLite, asegúrate de que exista el archivo
+    // Si usas SQLite, crea el archivo si no existe
     if (config('database.default') === 'sqlite') {
         $path = database_path('database.sqlite');
         if (! file_exists($path)) {
@@ -25,38 +25,31 @@ Route::get('/_setup/{token}', function (string $token) {
         }
     }
 
-    // Migraciones + seeders (forzado en producción)
     Artisan::call('migrate', ['--force' => true]);
     Artisan::call('db:seed', ['--force' => true]);
 
-    // Opcional: cache de config/rutas/vistas
-    Artisan::call('optimize');
-
-    return response(nl2br(e(Artisan::output())), 200)
-        ->header('Content-Type', 'text/html');
-});
-// ------------------------------------------------------------
-
-Route::get('/', [PageController::class, 'index'])->name('home');
-
-// Detalle público
-Route::get('/question/{question}', [QuestionController::class, 'show'])
-    ->name('question.show');
-
-// Comentarios (requiere login)
-Route::post('/questions/{question}/comments', [CommentController::class, 'store'])
-    ->name('comments.store')
-    ->middleware('auth');
-
-// Rutas protegidas (crear/editar/eliminar)
-Route::middleware('auth')->group(function () {
-    Route::get('/questions/create', [QuestionController::class, 'create'])->name('questions.create');
-    Route::post('/questions', [QuestionController::class, 'store'])->name('questions.store');
-
-    Route::get('/questions/{question}/edit', [QuestionController::class, 'edit'])->name('questions.edit');
-    Route::put('/questions/{question}', [QuestionController::class, 'update'])->name('questions.update');
-
-    Route::delete('/questions/{question}', [QuestionController::class, 'destroy'])->name('questions.destroy');
+    return nl2br(e(Artisan::output()));
 });
 
-require __DIR__ . '/auth.php';
+// Solo vuelve a sembrar categorías
+Route::get('/_seed_categories/{token}', function (string $token) {
+    abort_unless(hash_equals(env('SETUP_TOKEN', ''), $token), 403);
+
+    Artisan::call('db:seed', [
+        '--class' => 'Database\\Seeders\\CategorySeeder',
+        '--force' => true,
+    ]);
+
+    return nl2br(e(Artisan::output()));
+});
+
+// Debug rápido: ver cuántas categorías hay
+Route::get('/_debug_categories/{token}', function (string $token) {
+    abort_unless(hash_equals(env('SETUP_TOKEN', ''), $token), 403);
+    return [
+        'connection' => config('database.default'),
+        'db'         => config('database.connections.sqlite.database'),
+        'count'      => \App\Models\Category::count(),
+        'sample'     => \App\Models\Category::select('id','name','slug')->orderBy('id')->take(5)->get()
+    ];
+});
