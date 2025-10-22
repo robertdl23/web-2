@@ -102,47 +102,30 @@
     </div>
 
     {{-- Respuestas --}}
-    @if($question->answers->isNotEmpty())
-        <ul class="space-y-4">
-            @foreach($question->answers as $answer)
-                <li>
-                    <div class="flex items-start gap-2">
-                        <div>&hearts;</div>
+@php
+    $answers = $question->answers ?? collect();  // si viene null, colección vacía
+@endphp
 
-                        <div>
-                            <p class="text-sm text-gray-300 whitespace-pre-line">
-                                {{ $answer->content }}
-                            </p>
-                            <p class="text-xs text-gray-500">
-                                {{ $answer->user->name }} |
-                                {{ $answer->created_at->diffForHumans() }}
-                            </p>
-
-                            {{-- Comentarios de la respuesta --}}
-                            @if($answer->comments->isNotEmpty())
-                                <ul class="my-4 space-y-2">
-                                    @foreach($answer->comments as $comment)
-                                        <li class="flex items-center gap-2">
-                                            <p class="text-xs bg-white/10 p-4 rounded-md">
-                                                <span class="text-gray-500">
-                                                    {{ $comment->user->name }} |
-                                                    {{ $comment->created_at->diffForHumans() }}
-                                                </span>
-                                                <span class="block text-gray-300">
-                                                    {{ $comment->content }}
-                                                </span>
-                                            </p>
-
-                                            <div>&hearts;</div>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @endif
-                        </div>
+@if($answers->isNotEmpty())
+    <ul class="space-y-4">
+        @foreach($answers as $answer)
+            <li>
+                <div class="flex items-start gap-2">
+                    <div>&hearts;</div>
+                    <div>
+                        <p class="text-sm text-gray-900">{{ $answer->content }}</p>
+                        <p class="mt-1 text-xs text-gray-500">
+                            Por {{ $answer->user->name ?? 'Anónimo' }}
+                            — {{ $answer->created_at?->diffForHumans() }}
+                        </p>
                     </div>
-                </li>
-            @endforeach
-        </ul>
-    @endif
+                </div>
+            </li>
+        @endforeach
+    </ul>
+@else
+    <p class="text-sm text-gray-500">Aún no hay respuestas.</p>
+@endif
+
 
 </x-forum.layouts.app>

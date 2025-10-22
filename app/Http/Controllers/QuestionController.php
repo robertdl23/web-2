@@ -66,10 +66,14 @@ class QuestionController extends Controller
             ->with('status', 'Pregunta actualizada correctamente.');
     }
 
-    public function show(Question $question)
-    {
-        return view('questions.show', compact('question'));
-    }
+   public function show(\App\Models\Question $question)
+{
+    // carga respuestas con su autor y también la categoría y autor de la pregunta
+    $question->load(['answers.user', 'category', 'user']);
+
+    return view('questions.show', compact('question'));
+}
+
 
     public function destroy(Question $question)
     {
