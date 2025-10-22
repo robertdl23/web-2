@@ -1,26 +1,42 @@
 FROM php:8.2-apache
 WORKDIR /var/www/html
 
-# Paquetes + extensiones PHP
+# Paquetes del sistema + extensiones PHP
 RUN apt-get update && apt-get install -y \
-    git unzip libzip-dev libpng-dev libicu-dev \
+    git unzip curl ca-certificates gnupg \
+    libzip-dev libpng-dev libicu-dev \
     libsqlite3-0 libsqlite3-dev libjpeg62-turbo-dev libfreetype6-dev \
-    && docker-php-ext-configure gd --with-jpeg --with-freetype \
-    && docker-php-ext-install pdo pdo_sqlite gd intl zip \
-    && a2enmod rewrite \
-    && rm -rf /var/lib/apt/lists/*
+ && docker-php-ext-configure gd --with-jpeg --with-freetype \
+ && docker-php-ext-install pdo pdo_sqlite gd intl zip \
+ && a2enmod rewrite \
+ && rm -rf /var/lib/apt/lists/*
 
-# VHOST estable a /public
+# VHOST apuntando a /public
 COPY docker/vhost.conf /etc/apache2/sites-available/000-default.conf
 
-# Copia el código
+# Código de la app
 COPY . /var/www/html
 
 # Composer en la imagen
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# 🔹 Instalar dependencias PHP (crea vendor/)
+# Dependencias PHP
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+# --- Node + build de Vite (con devDeps) ---
+# instala curl por si no estuviera
+RUN apt-get update && apt-get install -y curl
+
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && node -v && npm -v
+
+# Instalamos devDependencies para poder compilar y luego las podaremos
+# (no fijes NODE_ENV=production antes del build)
+RUN npm ci --include=dev --no-audit --no-fund \
+    && npm run build \
+    && npm prune --omit=dev
+# --- FIN Node ---
 
 # Permisos
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database /var/www/html/vendor \
@@ -29,6 +45,7 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 # Entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+RUN ls -la public && ls -la public/build
 
 EXPOSE 80
 CMD ["/entrypoint.sh"]
