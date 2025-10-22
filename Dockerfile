@@ -1,40 +1,46 @@
-# Usa PHP con Apache
+# Dockerfile en la RAÍZ del proyecto
 FROM php:8.2-apache
 
-# Instala dependencias del sistema necesarias
+# 1) Paquetes del sistema necesarios (incluye libjpeg/freetype y pkg-config)
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip sqlite3 libsqlite3-dev \
-    && docker-php-ext-install pdo pdo_sqlite
+    git unzip curl \
+    pkg-config \
+    libzip-dev \
+    libicu-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libsqlite3-0 libsqlite3-dev \
+ && docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-install -j$(nproc) pdo_sqlite gd intl zip \
+ && a2enmod rewrite \
+ && rm -rf /var/lib/apt/lists/*
 
-# Habilita mod_rewrite de Apache
-RUN a2enmod rewrite
-
-# Copia archivos del proyecto al contenedor
+# 2) Copia del proyecto
+WORKDIR /var/www/html
 COPY . /var/www/html
 
-# Establece el directorio de trabajo
-WORKDIR /var/www/html
-
-# Instala Composer
+# 3) Composer (desde imagen oficial)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-# Instala Node y compila los assets
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    npm ci && npm run build
+# 4) Node 20 + build de Vite
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+ && apt-get update && apt-get install -y nodejs \
+ && npm ci --no-audit --no-fund \
+ && npm run build \
+ && rm -rf /var/lib/apt/lists/*
 
-# Crea base de datos SQLite temporal
-RUN php -r "if (!file_exists('/tmp/database.sqlite')) touch('/tmp/database.sqlite');"
+# 5) SQLite en /tmp (como definiste en las variables de Render)
+RUN touch /tmp/database.sqlite \
+ && chown -R www-data:www-data /tmp /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Configura permisos
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# 6) Variables/puerto y arranque
+ENV PORT=8080
+EXPOSE 8080
 
-# Define variable de entorno para el puerto
-ENV PORT=80
-
-# Expone el puerto
-EXPOSE 80
-
-# Comando de inicio
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
+CMD php artisan migrate --force \
+ && php artisan config:cache \
+ && php artisan route:cache \
+ && php artisan view:cache \
+ && php artisan serve --host=0.0.0.0 --port=$PORT
