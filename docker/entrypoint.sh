@@ -1,23 +1,25 @@
 #!/usr/bin/env bash
 set -e
 
-echo "🚀 Iniciando contenedor Laravel en Render..."
+echo "🚀 Iniciando contenedor Laravel..."
 
-# Asegurar base de datos SQLite
-if [ ! -f /var/www/html/database/database.sqlite ]; then
-    echo "📦 Creando base de datos SQLite..."
-    mkdir -p /var/www/html/database
-    touch /var/www/html/database/database.sqlite
-fi
-
-# Asignar permisos correctos
+# Asegurar BD sqlite
+[ -f /var/www/html/database/database.sqlite ] || touch /var/www/html/database/database.sqlite
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
 
-# Ejecutar migraciones automáticamente (sin shell)
-echo "🗄 Ejecutando migraciones..."
+# Limpiar y reconstruir caches con ENV reales de Render
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+php artisan cache:clear
+
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Migraciones
 php artisan migrate --force || true
 
 # Arrancar Apache
-echo "🌐 Levantando servidor Apache..."
 exec apache2-foreground

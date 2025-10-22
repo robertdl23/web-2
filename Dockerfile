@@ -1,46 +1,44 @@
-# Dockerfile en la RAÍZ del proyecto
 FROM php:8.2-apache
 
-# 1) Paquetes del sistema necesarios (incluye libjpeg/freetype y pkg-config)
+# Habilitar rewrite y apuntar a /public
+RUN a2enmod rewrite \
+ && sed -i 's#/var/www/html#/var/www/html/public#g' /etc/apache2/sites-available/000-default.conf \
+ && sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#g' /etc/apache2/sites-available/000-default.conf
+
+# Paquetes y extensiones
 RUN apt-get update && apt-get install -y \
-    git unzip curl \
-    pkg-config \
-    libzip-dev \
-    libicu-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libsqlite3-0 libsqlite3-dev \
- && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install -j$(nproc) pdo_sqlite gd intl zip \
- && a2enmod rewrite \
+    git unzip curl pkg-config \
+    libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+    libicu-dev libsqlite3-0 libsqlite3-dev \
+ && docker-php-ext-configure gd --with-jpeg \
+ && docker-php-ext-install pdo pdo_sqlite gd intl zip \
  && rm -rf /var/lib/apt/lists/*
 
-# 2) Copia del proyecto
-WORKDIR /var/www/html
-COPY . /var/www/html
-
-# 3) Composer (desde imagen oficial)
+# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-# 4) Node 20 + build de Vite
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
- && apt-get update && apt-get install -y nodejs \
- && npm ci --no-audit --no-fund \
- && npm run build \
- && rm -rf /var/lib/apt/lists/*
+# Código
+WORKDIR /var/www/html
+COPY . .
 
-# 5) SQLite en /tmp (como definiste en las variables de Render)
-RUN touch /tmp/database.sqlite \
- && chown -R www-data:www-data /tmp /var/www/html/storage /var/www/html/bootstrap/cache
+# Dependencias PHP
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
-# 6) Variables/puerto y arranque
-ENV PORT=8080
+# (Opcional) build de assets si usas Vite en prod:
+# RUN apt-get update && apt-get install -y nodejs npm \
+#  && npm ci --no-audit --no-fund \
+#  && npm run build \
+#  && rm -rf /var/lib/apt/lists/*
+
+# Crear BD sqlite y permisos
+RUN mkdir -p database \
+ && touch database/database.sqlite \
+ && chown -R www-data:www-data storage bootstrap/cache database \
+ && chmod -R 775 storage bootstrap/cache database
+
+# Entrypoint hará migraciones y cache en runtime
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 8080
-
-CMD php artisan migrate --force \
- && php artisan config:cache \
- && php artisan route:cache \
- && php artisan view:cache \
- && php artisan serve --host=0.0.0.0 --port=$PORT
+CMD ["/entrypoint.sh"]
