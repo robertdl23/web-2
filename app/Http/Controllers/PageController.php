@@ -9,10 +9,9 @@ class PageController extends Controller
 {
     public function index()
     {
-        // ejemplo simple: últimas preguntas y categorías
-        $questions  = Question::with('category','user')->latest()->paginate(10);
-        $categories = Category::orderBy('name')->get();
+         $questions  = Question::with(['category','user'])->latest()->paginate(10);
+    $categories = Category::orderBy('name')->get();
 
-        return view('home', compact('questions','categories'));
+    return view('pages.home', compact('questions','categories')); // <- apunta a pages/home.blade.php
     }
 }
