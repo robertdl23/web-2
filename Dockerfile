@@ -1,44 +1,32 @@
 FROM php:8.2-apache
 
-# Habilitar rewrite y apuntar a /public
-RUN a2enmod rewrite \
- && sed -i 's#/var/www/html#/var/www/html/public#g' /etc/apache2/sites-available/000-default.conf \
- && sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#g' /etc/apache2/sites-available/000-default.conf
+WORKDIR /var/www/html
 
-# Paquetes y extensiones
+# Paquetes + extensiones PHP
 RUN apt-get update && apt-get install -y \
-    git unzip curl pkg-config \
-    libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
-    libicu-dev libsqlite3-0 libsqlite3-dev \
- && docker-php-ext-configure gd --with-jpeg \
- && docker-php-ext-install pdo pdo_sqlite gd intl zip \
- && rm -rf /var/lib/apt/lists/*
+    git unzip libzip-dev libpng-dev libicu-dev \
+    libsqlite3-0 libsqlite3-dev libjpeg62-turbo-dev libfreetype6-dev \
+    && docker-php-ext-configure gd --with-jpeg --with-freetype \
+    && docker-php-ext-install pdo pdo_sqlite gd intl zip \
+    && a2enmod rewrite \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copia el vhost fijo (sin sed)
+COPY docker/vhost.conf /etc/apache2/sites-available/000-default.conf
+
+# Copia el proyecto
+COPY . /var/www/html
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Código
-WORKDIR /var/www/html
-COPY . .
+# Permisos mínimos para storage y DB sqlite
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Dependencias PHP
-RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
-
-# (Opcional) build de assets si usas Vite en prod:
-# RUN apt-get update && apt-get install -y nodejs npm \
-#  && npm ci --no-audit --no-fund \
-#  && npm run build \
-#  && rm -rf /var/lib/apt/lists/*
-
-# Crear BD sqlite y permisos
-RUN mkdir -p database \
- && touch database/database.sqlite \
- && chown -R www-data:www-data storage bootstrap/cache database \
- && chmod -R 775 storage bootstrap/cache database
-
-# Entrypoint hará migraciones y cache en runtime
+# Entrypoint (migraciones + caches y arranque de Apache)
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 8080
+EXPOSE 80
 CMD ["/entrypoint.sh"]
