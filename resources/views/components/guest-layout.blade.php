@@ -1,43 +1,39 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ $title ?? 'Autenticación' }}</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ $title ?? 'Foro · Acceso' }}</title>
 
-  {{-- Fuente + Tailwind (sin Vite) --}}
+  <!-- Fuente + Tailwind via CDN -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
-    window.tailwind = { theme:{ extend:{ fontFamily:{ sans:['Inter','ui-sans-serif','system-ui'] } } } };
+    window.tailwind = { theme:{ extend:{ fontFamily:{ sans:['Inter','ui-sans-serif','system-ui'] } } } }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  {{-- Tu CSS plano (public/css/app.css) --}}
+  <!-- Tus overrides (sin Vite) -->
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  @stack('head')
 </head>
+
 <body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased">
-  {{-- Fondo suave --}}
-  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-    <div class="absolute -top-40 left-1/2 h-[40rem] w-[70rem] -translate-x-1/2 rotate-12 blur-3xl opacity-30
-                bg-gradient-to-tr from-[#ff80b5] to-[#9089fc]"></div>
+  <!-- Fondo bonito -->
+  <div class="pointer-events-none absolute inset-x-0 -top-40 -z-10 transform-gpu blur-3xl sm:-top-80 select-none">
+    <div class="relative left-1/2 -translate-x-1/2 aspect-[1155/678] w-[36rem] rotate-[30deg]
+                bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:w-[72rem]"></div>
   </div>
 
-  <div class="mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center px-4">
-    {{-- Logo / volver al foro (opcional) --}}
-    <a href="{{ route('home') }}" class="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-zinc-700">
-      <x-forum.logo class="h-6 w-6" />
-      <span>Volver al foro</span>
+  <main class="relative z-10 mx-auto max-w-md px-6 py-16">
+    <a href="{{ route('home') }}" class="inline-flex items-center gap-2 mb-10 text-sm text-indigo-600 hover:underline">
+      ← Volver al foro
     </a>
 
-    {{-- Card central --}}
-    <div class="w-full max-w-md rounded-2xl bg-white/80 p-8 shadow-xl ring-1 ring-zinc-200 backdrop-blur">
+    <div class="rounded-2xl bg-white/80 backdrop-blur shadow-xl ring-1 ring-zinc-200 p-8">
       {{ $slot }}
     </div>
-  </div>
+  </main>
 </body>
 </html>
