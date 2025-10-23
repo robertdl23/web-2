@@ -75,13 +75,16 @@ class QuestionController extends Controller
 }
 
 
-    public function destroy(Question $question)
-    {
-        $this->authorize('delete', $question);
-        $question->delete();
+    public function destroy(\App\Models\Question $question)
+{
+    // (Opcional) reglas de autorización:
+    $this->authorize('delete', $question);
 
-        return redirect()
-            ->route('home')
-            ->with('status', 'Pregunta eliminada.');
-    }
+    $question->delete();
+
+    // Redirige a la portada del foro
+    return redirect()
+        ->route('home')            // o ->route('questions.index') si tienes listado
+        ->with('status', 'Pregunta eliminada correctamente.');
+}
 }
