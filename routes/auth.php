@@ -9,6 +9,10 @@ use App\Livewire\Auth\ResetPassword;
 use App\Livewire\Auth\VerifyEmail;
 use Illuminate\Support\Facades\Route;
 
+
+Route::post('/login', \App\Livewire\Auth\Login::class);
+Route::post('/register', \App\Livewire\Auth\Register::class);
+
 Route::middleware('guest')->group(function () {
     Route::get('login', Login::class)->name('login');
     Route::get('register', Register::class)->name('register');
