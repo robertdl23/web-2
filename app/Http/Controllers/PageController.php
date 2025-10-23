@@ -12,6 +12,6 @@ class PageController extends Controller
         $questions  = Question::with('category','user')->latest()->paginate(10);
         $categories = Category::orderBy('name')->get();
 
-        return view('Pages.home', compact('questions','categories'));
+        return view('pages.home', compact('questions','categories'));
     }
 }
