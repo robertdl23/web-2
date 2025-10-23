@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\AuthController;
 
 // Foro
 Route::get('/', [PageController::class, 'index'])->name('home');
@@ -24,11 +25,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/questions/{question}', [QuestionController::class, 'destroy'])->name('questions.destroy');
 });
 
-// Rutas de auth del starter (reset, verify, etc.)
-require __DIR__.'/auth.php';
-
-// --- OVERRIDES FINALES: muestran TUS blades bonitos en GET ---
 Route::middleware('guest')->group(function () {
-    Route::get('/login', fn () => view('auth.login'))->name('login');
-    Route::get('/register', fn () => view('auth.register'))->name('register');
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register']);
 });
+
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');

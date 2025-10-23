@@ -2,7 +2,7 @@
   <h1 class="text-2xl font-semibold mb-6 text-center">Crear cuenta</h1>
 
   {{-- OJO: POST directo a /register --}}
-  <form method="POST" action="{{ url('/register') }}" class="grid gap-5">
+ <form method="POST" action="{{ route('register') }}">
     @csrf
 
     <div>

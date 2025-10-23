@@ -8,7 +8,7 @@
   @endif
 
   {{-- OJO: POST directo a /login --}}
-  <form method="POST" action="{{ url('/login') }}" class="grid gap-5">
+  <<form method="POST" action="{{ route('login') }}">
     @csrf
 
     <div>
