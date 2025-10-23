@@ -24,4 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/questions/{question}', [QuestionController::class, 'destroy'])->name('questions.destroy');
 });
 
+Route::view('/login', 'auth.login')->name('login');
+Route::view('/register', 'auth.register')->name('register');
+
 require __DIR__.'/auth.php';
