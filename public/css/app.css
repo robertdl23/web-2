@@ -1,2 +1,38 @@
 /* public/css/app.css */
-html, body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+
+/* Tipografía base y color más oscuro por defecto */
+html, body {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #111827; /* gray-900 */
+}
+
+/* Asegura contraste en textos comunes */
+p, li, small, span { color: #1f2937; }       /* gray-800 */
+h1, h2, h3, h4 { color: #0f172a; }           /* slate-900 */
+
+/* Enlaces visibles */
+a { color: #4f46e5; }                        /* indigo-600 */
+a:hover { color: #4338ca; }                  /* indigo-700 */
+
+/* Inputs y textareas (texto y placeholder) */
+input, textarea, select {
+  color: #111827 !important;                 /* gray-900 */
+}
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important;                 /* gray-500 */
+  opacity: 1;                                /* evita que quede pálido */
+}
+
+/* Si usas contenido renderizado como markdown (.prose) */
+.prose, .prose p, .prose li, .prose a, .prose strong, .prose h1, .prose h2, .prose h3 {
+  color: #111827 !important;
+}
+
+/* Subir contraste de utilidades Tailwind típicas (cuando el CDN pone gray-400/500) */
+.text-gray-400, .text-zinc-400 { color: #4b5563 !important; }  /* gray-600 */
+.text-gray-500, .text-zinc-500 { color: #374151 !important; }  /* gray-700 */
+.text-gray-300, .text-zinc-300 { color: #6b7280 !important; }  /* gray-500 */
+
+/* Evita textos lavados por opacidades */
+.text-opacity-70, .text-opacity-60 { opacity: 1 !important; }
