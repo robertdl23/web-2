@@ -31,18 +31,15 @@
                         </a>
                     @endcan
 
-                    @can('delete', $question)
-                        <form method="POST"
-                              action="{{ route('questions.destroy', $question) }}"
-                              onsubmit="return confirm('¿Estás seguro de eliminar esta pregunta?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                    class="rounded-md bg-red-600 hover:bg-red-500 px-2 py-1 text-xs font-semibold text-white cursor-pointer">
-                                Eliminar
-                            </button>
-                        </form>
-                    @endcan
+                   @can('delete', $question)
+<form method="POST"
+      action="{{ route('questions.destroy', $question) }}"
+      onsubmit="return confirm('¿Eliminar esta pregunta?');">
+    @csrf
+    @method('DELETE')
+    <button class="text-red-600 hover:underline">Eliminar</button>
+</form>
+@endcan
                 </div>
             </div>
         </div>
